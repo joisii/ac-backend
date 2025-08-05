@@ -11,13 +11,27 @@ const ServiceRequest = require('./models/ServiceRequest');
 const app = express();
 
 // ------------------------------------
-// 🔧 Middleware
+// 🔧 CORS Middleware
 // ------------------------------------
+const allowedOrigins = [
+  'https://gvj.netlify.app',   // Production frontend
+  'http://localhost:3000'      // Local development
+];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'https://gvj.netlify.app', // allow only your frontend in production
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like Postman) or from allowed origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, origin);
+    } else {
+      console.log(`❌ Blocked by CORS: ${origin}`);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: ['GET', 'POST', 'DELETE'],
   credentials: true
 }));
+
 app.use(express.json());
 
 // ------------------------------------
@@ -43,7 +57,6 @@ app.get('/', (req, res) => {
 app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
 
-  // Use env variables for admin login in production
   if (username === process.env.ADMIN_USER && password === process.env.ADMIN_PASS) {
     res.json({ success: true });
   } else {
