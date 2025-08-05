@@ -14,7 +14,7 @@ const app = express();
 // 🔧 Middleware
 // ------------------------------------
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*', // allow only your frontend in production
+  origin: process.env.FRONTEND_URL || 'https://gvj.netlify.app', // allow only your frontend in production
   methods: ['GET', 'POST', 'DELETE'],
   credentials: true
 }));
