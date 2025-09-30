@@ -13,44 +13,39 @@ const app = express();
 // 🔧 CORS Middleware
 // ------------------------------------
 const allowedOrigins = [
-  'https://gvjwebsite.netlify.app', // production frontend
-  'http://localhost:3000'           // local development
+  'https://gvjwebsite.netlify.app', // Production frontend
+  'http://localhost:3000'           // Local dev
 ];
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true); // allow request
-    } else {
-      console.log(`❌ Blocked by CORS: ${origin}`);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'], // include OPTIONS
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
-
-// Handle preflight requests for all routes
-app.options('*', cors({
-  origin: function (origin, callback) {
+    // Allow requests with no origin (like Postman) or from allowed origins
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error("Not allowed by CORS"));
+      console.log(`❌ Blocked by CORS: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET','POST','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
-}));
+};
+
+// Apply CORS globally
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
+app.use(express.json());
 
 // ------------------------------------
 // 🌐 MongoDB Atlas Connection
 // ------------------------------------
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ Connected to MongoDB Atlas"))
-  .catch(err => console.error("❌ MongoDB connection error:", err));
+  .then(() => console.log('✅ Connected to MongoDB Atlas'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // ------------------------------------
 // 🏠 Root Route
