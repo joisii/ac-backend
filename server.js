@@ -14,8 +14,8 @@ const app = express();
 // 🔧 CORS Middleware
 // ------------------------------------
 const allowedOrigins = [
-  'https://gvjwebsite.netlify.app',   // Production frontend
-  'http://localhost:3000'             // Local development
+  process.env.FRONTEND_URL, // Production frontend from .env
+  'http://localhost:3000'   // Local development
 ];
 
 app.use(cors({
