@@ -13,15 +13,14 @@ const app = express();
 // 🔧 CORS Middleware
 // ------------------------------------
 const allowedOrigins = [
-  'https://gvjwebsite.netlify.app', // Production frontend
-  'http://localhost:3000'           // Local dev
+  'https://gvjwebsite.netlify.app', // production frontend
+  'http://localhost:3000'           // local dev
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like Postman) or from allowed origins
     if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
+      callback(null, true); // allow request
     } else {
       console.log(`❌ Blocked by CORS: ${origin}`);
       callback(new Error('Not allowed by CORS'));
