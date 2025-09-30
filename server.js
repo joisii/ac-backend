@@ -15,12 +15,11 @@ const app = express();
 // ------------------------------------
 const allowedOrigins = [
   'https://gvjwebsite.netlify.app',   // Production frontend
-  'http://localhost:3000'      // Local development
+  'http://localhost:3000'             // Local development
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like Postman) or from allowed origins
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, origin);
     } else {
@@ -45,7 +44,7 @@ mongoose.connect(process.env.MONGO_URI, {
 .catch(err => console.error("❌ MongoDB connection error:", err));
 
 // ------------------------------------
-// 🏠 Root Route (So / works)
+// 🏠 Root Route
 // ------------------------------------
 app.get('/', (req, res) => {
   res.send('🚀 Backend is up and running!');
@@ -65,7 +64,7 @@ app.post('/admin/login', (req, res) => {
 });
 
 // ------------------------------------
-// 🧾 SALES ROUTES
+// 🧰 SALES ROUTES
 // ------------------------------------
 app.get('/sales', async (req, res) => {
   try {
@@ -89,14 +88,14 @@ app.post('/sales', async (req, res) => {
 app.delete('/sales/:id', async (req, res) => {
   try {
     await Sale.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Sale deleted' });
+    res.json({ message: 'Sale deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Error deleting sale', error: err });
   }
 });
 
 // ------------------------------------
-// 🧰 SERVICE REQUESTS ROUTES
+// 🧾 SERVICE REQUESTS ROUTES
 // ------------------------------------
 app.get('/requests', async (req, res) => {
   try {
@@ -120,7 +119,7 @@ app.post('/requests', async (req, res) => {
 app.delete('/requests/:id', async (req, res) => {
   try {
     await ServiceRequest.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Request deleted' });
+    res.json({ message: 'Service request deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Error deleting request', error: err });
   }
