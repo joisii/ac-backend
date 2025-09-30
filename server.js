@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config(); // Load environment variables
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -7,54 +7,52 @@ const cors = require('cors');
 const Sale = require('./models/Sale');
 const ServiceRequest = require('./models/ServiceRequest');
 
+// Initialize app
 const app = express();
 
 // ------------------------------------
 // 🔧 CORS Middleware
 // ------------------------------------
 const allowedOrigins = [
-  'https://gvjwebsite.netlify.app', // production frontend
-  'http://localhost:3000'           // local dev
+  'https://gvjwebsite.netlify.app',   // Production frontend
+  'http://localhost:3000'      // Local development
 ];
 
-const corsOptions = {
-  origin: function (origin, callback) {
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like Postman) or from allowed origins
     if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true); // allow request
+      callback(null, origin);
     } else {
       console.log(`❌ Blocked by CORS: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error("Not allowed by CORS"));
     }
   },
-  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'DELETE'],
   credentials: true
-};
-
-// Apply CORS globally
-app.use(cors(corsOptions));
-
-// Handle preflight requests
-app.options('*', cors(corsOptions));
+}));
 
 app.use(express.json());
 
 // ------------------------------------
 // 🌐 MongoDB Atlas Connection
 // ------------------------------------
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ Connected to MongoDB Atlas'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("✅ Connected to MongoDB Atlas"))
+.catch(err => console.error("❌ MongoDB connection error:", err));
 
 // ------------------------------------
-// 🏠 Root Route
+// 🏠 Root Route (So / works)
 // ------------------------------------
 app.get('/', (req, res) => {
   res.send('🚀 Backend is up and running!');
 });
 
 // ------------------------------------
-// 🔐 Admin Login
+// 🔐 Admin Login Route
 // ------------------------------------
 app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
@@ -67,7 +65,7 @@ app.post('/admin/login', (req, res) => {
 });
 
 // ------------------------------------
-// 🧰 SALES ROUTES
+// 🧾 SALES ROUTES
 // ------------------------------------
 app.get('/sales', async (req, res) => {
   try {
@@ -91,14 +89,14 @@ app.post('/sales', async (req, res) => {
 app.delete('/sales/:id', async (req, res) => {
   try {
     await Sale.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Sale deleted successfully' });
+    res.json({ message: 'Sale deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Error deleting sale', error: err });
   }
 });
 
 // ------------------------------------
-// 🧾 SERVICE REQUESTS ROUTES
+// 🧰 SERVICE REQUESTS ROUTES
 // ------------------------------------
 app.get('/requests', async (req, res) => {
   try {
@@ -122,7 +120,7 @@ app.post('/requests', async (req, res) => {
 app.delete('/requests/:id', async (req, res) => {
   try {
     await ServiceRequest.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Service request deleted successfully' });
+    res.json({ message: 'Request deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Error deleting request', error: err });
   }
