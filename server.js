@@ -1,4 +1,4 @@
-require('dotenv').config(); // Load environment variables
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -7,41 +7,50 @@ const cors = require('cors');
 const Sale = require('./models/Sale');
 const ServiceRequest = require('./models/ServiceRequest');
 
-// Initialize app
 const app = express();
 
 // ------------------------------------
 // 🔧 CORS Middleware
 // ------------------------------------
 const allowedOrigins = [
-  process.env.FRONTEND_URL, // Production frontend from .env
-  'http://localhost:3000'   // Local development
+  'https://gvjwebsite.netlify.app', // production frontend
+  'http://localhost:3000'           // local development
 ];
 
 app.use(cors({
-  origin: (origin, callback) => {
+  origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, origin);
+      callback(null, true); // allow request
     } else {
       console.log(`❌ Blocked by CORS: ${origin}`);
       callback(new Error("Not allowed by CORS"));
     }
   },
-  methods: ['GET', 'POST', 'DELETE'],
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'], // include OPTIONS
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
-app.use(express.json());
+// Handle preflight requests for all routes
+app.options('*', cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ['GET','POST','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
+  credentials: true
+}));
 
 // ------------------------------------
 // 🌐 MongoDB Atlas Connection
 // ------------------------------------
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("✅ Connected to MongoDB Atlas"))
-.catch(err => console.error("❌ MongoDB connection error:", err));
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ Connected to MongoDB Atlas"))
+  .catch(err => console.error("❌ MongoDB connection error:", err));
 
 // ------------------------------------
 // 🏠 Root Route
@@ -51,7 +60,7 @@ app.get('/', (req, res) => {
 });
 
 // ------------------------------------
-// 🔐 Admin Login Route
+// 🔐 Admin Login
 // ------------------------------------
 app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
