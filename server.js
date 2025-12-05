@@ -11,27 +11,31 @@ const ServiceRequest = require('./models/ServiceRequest');
 const app = express();
 
 // ------------------------------------
-// 🔧 CORS Middleware
+// 🔧 UPDATED CORS Middleware (FIXED)
 // ------------------------------------
 const allowedOrigins = [
-  'https://gvjwebsite.netlify.app',   // Production frontend
-  'http://localhost:3000'      // Local development
+  'https://gvjwebsite.netlify.app',  // Old frontend
+  'https://www.gvjaircon.com',       // ✅ NEW LIVE DOMAIN
+  'http://localhost:3000'            // Local development
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like Postman) or from allowed origins
     if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, origin);
+      callback(null, true);
     } else {
       console.log(`❌ Blocked by CORS: ${origin}`);
-      callback(new Error("Not allowed by CORS"));
+      callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // ✅ allow OPTIONS
   credentials: true
 }));
 
+// ✅ Handle Preflight Requests
+app.options('*', cors());
+
+// Middleware
 app.use(express.json());
 
 // ------------------------------------
@@ -45,7 +49,7 @@ mongoose.connect(process.env.MONGO_URI, {
 .catch(err => console.error("❌ MongoDB connection error:", err));
 
 // ------------------------------------
-// 🏠 Root Route (So / works)
+// 🏠 Root Route
 // ------------------------------------
 app.get('/', (req, res) => {
   res.send('🚀 Backend is up and running!');
