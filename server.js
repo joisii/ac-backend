@@ -6,6 +6,7 @@ const cors = require('cors');
 // Import models
 const Sale = require('./models/Sale');
 const ServiceRequest = require('./models/ServiceRequest');
+const Project=require('./models/Project');
 
 // Initialize app
 const app = express();
@@ -16,7 +17,8 @@ const app = express();
 const allowedOrigins = [
   'https://gvjwebsite.netlify.app',  // Old frontend
   'https://www.gvjaircon.com',       // ✅ NEW LIVE DOMAIN
-  'http://localhost:3000'            // Local development
+  'http://localhost:3000'     
+       // Local development
 ];
 
 app.use(cors({
@@ -129,6 +131,58 @@ app.delete('/requests/:id', async (req, res) => {
     res.status(500).json({ message: 'Error deleting request', error: err });
   }
 });
+
+//Project sections
+app.get('/projects', async (req, res) => {
+  try {
+    const { category } = req.query;
+
+    const filter = { isActive: true };
+    if (category) {
+      filter.category = category;
+    }
+
+    const projects = await Project.find(filter);
+    res.json(projects);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching projects', error: err });
+  }
+});
+
+app.post('/projects', async (req, res) => {
+  try {
+    const newProject = new Project(req.body);
+    await newProject.save();
+    res.json(newProject);
+  } catch (err) {
+    res.status(500).json({ message: 'Error saving project', error: err });
+  }
+});
+
+app.put('/projects/:id', async (req, res) => {
+  try {
+    const updatedProject = await Project.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json(updatedProject);
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating project', error: err });
+  }
+});
+
+
+app.delete('/projects/:id', async (req, res) => {
+  try {
+    await Project.findByIdAndUpdate(req.params.id, { isActive: false });
+    res.json({ message: 'Project removed' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting project', error: err });
+  }
+});
+
+
 
 // ------------------------------------
 // 🚀 Start Server
