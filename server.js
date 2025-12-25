@@ -133,11 +133,15 @@ app.delete('/requests/:id', async (req, res) => {
 });
 
 //Project sections
+// ------------------- Projects API -------------------
+
 app.get('/projects', async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, admin } = req.query;
 
-    const filter = { isActive: true };
+    // Admin sees all projects, users see only active ones
+    const filter = admin === 'true' ? {} : { isActive: true };
+
     if (category) {
       filter.category = category;
     }
@@ -166,17 +170,27 @@ app.put('/projects/:id', async (req, res) => {
       req.body,
       { new: true }
     );
+
+    if (!updatedProject) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
     res.json(updatedProject);
   } catch (err) {
     res.status(500).json({ message: 'Error updating project', error: err });
   }
 });
 
-
+// ------------------- HARD DELETE -------------------
 app.delete('/projects/:id', async (req, res) => {
   try {
-    await Project.findByIdAndUpdate(req.params.id, { isActive: false });
-    res.json({ message: 'Project removed' });
+    const deletedProject = await Project.findByIdAndDelete(req.params.id);
+
+    if (!deletedProject) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    res.json({ message: 'Project permanently deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Error deleting project', error: err });
   }
