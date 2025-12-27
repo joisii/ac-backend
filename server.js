@@ -146,7 +146,9 @@ app.get('/projects', async (req, res) => {
       filter.category = category;
     }
 
-    const projects = await Project.find(filter);
+    const projects = await Project.find(filter)
+  .select("name location application acType")
+  .lean();
     res.json(projects);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching projects', error: err });

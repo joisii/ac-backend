@@ -5,15 +5,18 @@ const ProjectSchema = new mongoose.Schema({
   location: String,
   application: String,
   acType: String,
-  category: String,     // restaurant, gym, hospital, etc.
+  category: {
+    type: String,
+    index: true
+  },
   isActive: {
     type: Boolean,
-    default: true
+    default: true,
+    index: true
   },
   date: {
     type: Date,
     default: Date.now
   }
 });
-
 module.exports = mongoose.model('Project', ProjectSchema);
