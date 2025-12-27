@@ -132,7 +132,6 @@ app.delete('/requests/:id', async (req, res) => {
   }
 });
 
-//Project sections
 // ------------------- Projects API -------------------
 
 app.get('/projects', async (req, res) => {
@@ -147,7 +146,7 @@ app.get('/projects', async (req, res) => {
     }
 
     const projects = await Project.find(filter)
-  .select("name location application acType")
+  .select("name location application acType category")
   .lean();
     res.json(projects);
   } catch (err) {
