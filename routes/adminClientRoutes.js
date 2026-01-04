@@ -1,6 +1,6 @@
 const express = require("express");
 const Client = require("../models/Client");
-const uploadClientLogo = require("../middleware/uploadClient"); // cloudinary multer
+const uploadClientLogo = require("../middleware/clientUpload"); // cloudinary multer
 const cloudinary = require("../config/cloudinary");
 
 
