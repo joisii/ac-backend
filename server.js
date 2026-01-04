@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require("path");
-
+const fs = require("fs");
 
 // Import models
 const Sale = require('./models/Sale');
@@ -12,6 +12,14 @@ const Project=require('./models/Project');
 const AboutStats = require('./models/AboutStats');
 const CustomerList = require('./models/CustomerList');
 const adminPdfRoutes = require("./routes/adminPdfRoutes");
+
+// Ensure uploads/clients folder exists
+const clientUploadPath = path.join(__dirname, "uploads/clients");
+if (!fs.existsSync(clientUploadPath)) {
+  fs.mkdirSync(clientUploadPath, { recursive: true }); // ✅ creates uploads and clients if missing
+  console.log("✅ Created folder:", clientUploadPath);
+}
+
 const adminClientRoutes=require("./routes/adminClientRoutes");
 
 // Initialize app
