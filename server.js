@@ -2,11 +2,19 @@ require('dotenv').config(); // Load environment variables
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Import models
 const Sale = require('./models/Sale');
 const ServiceRequest = require('./models/ServiceRequest');
 const Project=require('./models/Project');
+const AboutStats = require('./models/AboutStats');
+const CustomerList = require('./models/CustomerList');
+const adminPdfRoutes = require("./routes/adminPdfRoutes");
+const adminClientRoutes=require("./routes/adminClientRoutes");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Initialize app
 const app = express();
@@ -197,9 +205,130 @@ app.delete('/projects/:id', async (req, res) => {
   }
 });
 
-
-
 // ------------------------------------
+// 📊 ABOUT STATS API (ADD THIS HERE)
+// ------------------------------------
+
+// About Stats Routes
+app.get('/about-stats', async (req, res) => {
+  try {
+    let stats = await AboutStats.findOne();
+
+    if (!stats) {
+      stats = await AboutStats.create({
+        coolingInstalledTR: 0,
+        clientsServed: 0,
+      });
+    }
+
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({
+      message: 'Error fetching about stats',
+      error: err,
+    });
+  }
+});
+
+app.put('/about-stats', async (req, res) => {
+  try {
+    const { coolingInstalledTR, clientsServed } = req.body;
+
+    if (
+      typeof coolingInstalledTR !== 'number' ||
+      typeof clientsServed !== 'number'
+    ) {
+      return res.status(400).json({ message: 'Invalid data type' });
+    }
+
+    const stats = await AboutStats.findOneAndUpdate(
+      {},
+      { coolingInstalledTR, clientsServed },
+      { new: true, upsert: true }
+    );
+
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({
+      message: 'Error updating about stats',
+      error: err,
+    });
+  }
+});
+
+// ------------------- GET ALL CUSTOMERS -------------------
+app.get("/customers", async (req, res) => {
+  try {
+    const warranty = await CustomerList.find({ type: "warranty" }).sort({ sno: 1 }).lean();
+    const amc = await CustomerList.find({ type: "amc" }).sort({ sno: 1 }).lean();
+    res.json({ warranty, amc });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching customers", error: err });
+  }
+});
+
+// ------------------- ADD CUSTOMER -------------------
+app.post("/customers", async (req, res) => {
+  try {
+    const { type, client } = req.body;
+    if (!type || !client) return res.status(400).json({ message: "Type and client are required" });
+
+    const last = await CustomerList.findOne({ type }).sort({ sno: -1 });
+    const newSno = last ? last.sno + 1 : 1;
+
+    const newCustomer = new CustomerList({ type, client, sno: newSno });
+    await newCustomer.save();
+
+    res.json(newCustomer);
+  } catch (err) {
+    res.status(500).json({ message: "Error adding customer", error: err });
+  }
+});
+
+// ------------------- EDIT CUSTOMER -------------------
+app.put("/customers/:id", async (req, res) => {
+  try {
+    const { client } = req.body;
+    if (!client) return res.status(400).json({ message: "Client name required" });
+
+    const updatedCustomer = await CustomerList.findByIdAndUpdate(
+      req.params.id,
+      { client },
+      { new: true }
+    );
+
+    if (!updatedCustomer) return res.status(404).json({ message: "Customer not found" });
+
+    res.json(updatedCustomer);
+  } catch (err) {
+    res.status(500).json({ message: "Error updating customer", error: err });
+  }
+});
+
+// ------------------- DELETE CUSTOMER -------------------
+app.delete("/customers/:id", async (req, res) => {
+  try {
+    const deletedCustomer = await CustomerList.findByIdAndDelete(req.params.id);
+    if (!deletedCustomer) return res.status(404).json({ message: "Customer not found" });
+
+    res.json({ message: "Customer deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting customer", error: err });
+  }
+});
+ 
+//Project evaluaton sheet and Service evaluation sheet
+// Serve uploaded PDFs
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+app.use("/admin", adminPdfRoutes);
+
+//project section clients
+app.use("/api", require("./routes/adminClientRoutes"));
+
+
+
+
 // 🚀 Start Server
 // ------------------------------------
 const PORT = process.env.PORT || 5000;
