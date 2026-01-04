@@ -1,22 +1,18 @@
 const express = require("express");
 const Client = require("../models/Client");
-const upload = require("../middleware/clientUpload");
-const fs = require("fs");
-const path = require("path");
+const uploadClientLogo = require("../middleware/uploadClient"); // cloudinary multer
+const cloudinary = require("../config/cloudinary");
+
 
 const router = express.Router();
 
-// ------------------ ADD CLIENT ------------------
+/**
+ * ------------------ ADD CLIENT ------------------
+ * POST /admin/clients
+ */
 router.post(
   "/admin/clients",
-  (req, res, next) => {
-    upload.single("logo")(req, res, function (err) {
-      if (err) {
-        return res.status(400).json({ message: err.message });
-      }
-      next();
-    });
-  },
+  uploadClientLogo.single("logo"),
   async (req, res) => {
     try {
       if (!req.file) {
@@ -25,11 +21,12 @@ router.post(
 
       const client = new Client({
         name: req.body.name,
-        logo: `/uploads/clients/${req.file.filename}`,
+        logo: req.file.path, // ✅ Cloudinary URL
+        logoPublicId: req.file.filename, // ✅ needed for delete/update
       });
 
       await client.save();
-      res.json({ message: "Client added successfully" });
+      res.json({ message: "Client added successfully", client });
     } catch (err) {
       console.error("ADD CLIENT ERROR:", err);
       res.status(500).json({ message: err.message });
@@ -37,7 +34,10 @@ router.post(
   }
 );
 
-// ------------------ GET CLIENTS ------------------
+/**
+ * ------------------ GET CLIENTS ------------------
+ * GET /clients
+ */
 router.get("/clients", async (req, res) => {
   try {
     const clients = await Client.find().sort({ createdAt: -1 });
@@ -48,43 +48,37 @@ router.get("/clients", async (req, res) => {
   }
 });
 
-// ------------------ UPDATE CLIENT ------------------
+/**
+ * ------------------ UPDATE CLIENT ------------------
+ * PUT /admin/clients/:id
+ */
 router.put(
   "/admin/clients/:id",
-  (req, res, next) => {
-    upload.single("logo")(req, res, function (err) {
-      if (err) {
-        return res.status(400).json({ message: err.message });
-      }
-      next();
-    });
-  },
+  uploadClientLogo.single("logo"),
   async (req, res) => {
     try {
       const client = await Client.findById(req.params.id);
-
       if (!client) {
         return res.status(404).json({ message: "Client not found" });
       }
 
       // Update name
-      client.name = req.body.name || client.name;
+      if (req.body.name) {
+        client.name = req.body.name;
+      }
 
-      // If new logo uploaded → delete old logo
+      // If new logo uploaded → delete old logo from Cloudinary
       if (req.file) {
-        // Remove leading slash to get proper file path
-        const oldLogoPath = path.join(__dirname, "..", client.logo.replace(/^\/+/, ""));
-
-        if (fs.existsSync(oldLogoPath)) {
-          fs.unlinkSync(oldLogoPath); // delete old logo
+        if (client.logoPublicId) {
+          await cloudinary.uploader.destroy(client.logoPublicId);
         }
 
-        // set new logo path
-        client.logo = `/uploads/clients/${req.file.filename}`;
+        client.logo = req.file.path; // new Cloudinary URL
+        client.logoPublicId = req.file.filename; // new public_id
       }
 
       await client.save();
-      res.json({ message: "Client updated successfully" });
+      res.json({ message: "Client updated successfully", client });
     } catch (err) {
       console.error("UPDATE CLIENT ERROR:", err);
       res.status(500).json({ message: err.message });
@@ -92,20 +86,20 @@ router.put(
   }
 );
 
-// ------------------ DELETE CLIENT ------------------
+/**
+ * ------------------ DELETE CLIENT ------------------
+ * DELETE /admin/clients/:id
+ */
 router.delete("/admin/clients/:id", async (req, res) => {
   try {
     const client = await Client.findById(req.params.id);
-
     if (!client) {
       return res.status(404).json({ message: "Client not found" });
     }
 
-    // Properly resolve file path to delete logo
-    const logoPath = path.join(__dirname, "..", client.logo.replace(/^\/+/, ""));
-
-    if (fs.existsSync(logoPath)) {
-      fs.unlinkSync(logoPath);
+    // Delete logo from Cloudinary
+    if (client.logoPublicId) {
+      await cloudinary.uploader.destroy(client.logoPublicId);
     }
 
     await client.deleteOne();

@@ -1,87 +1,61 @@
 const express = require("express");
-const fs = require("fs");
-const path = require("path");
-const multer = require("multer");
+const uploadPdf = require("../middleware/pdfUpload"); // 👈 Cloudinary middleware
+const cloudinary = require("../config/cloudinary");
 
 const router = express.Router();
 
-/* -----------------------------
-   TEMP STORAGE (SAFE)
------------------------------ */
-const storage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `temp-${Date.now()}${ext}`);
-  },
-});
-
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype === "application/pdf") cb(null, true);
-  else cb(new Error("Only PDF files allowed"), false);
-};
-
-const upload = multer({ storage, fileFilter });
-
-/* -----------------------------
-   UPLOAD / REPLACE
------------------------------ */
-router.post("/upload-pdf", upload.single("pdf"), (req, res) => {
+/* --------------------------------
+   UPLOAD / REPLACE PDF (ADMIN)
+-------------------------------- */
+router.post("/upload-pdf", uploadPdf.single("pdf"), async (req, res) => {
   try {
     const { type } = req.body;
 
-    console.log("UPLOAD TYPE:", type); // 🔍 DEBUG
+    if (!["project", "service"].includes(type)) {
+      return res.status(400).json({ message: "Invalid PDF type" });
+    }
 
     if (!req.file) {
       return res.status(400).json({ message: "No PDF uploaded" });
     }
 
-    if (!["project", "service"].includes(type)) {
-      fs.unlinkSync(req.file.path);
-      return res.status(400).json({ message: "Invalid PDF type" });
-    }
-
-    const finalName = `${type}-evaluation-sheet.pdf`;
-    const finalPath = path.join("uploads", finalName);
-
-    if (fs.existsSync(finalPath)) {
-      fs.unlinkSync(finalPath);
-    }
-
-    fs.renameSync(req.file.path, finalPath);
+    // Cloudinary URL
+    const pdfUrl = req.file.path;
 
     res.json({
       success: true,
-      message: `${type} evaluation sheet replaced`,
-      pdfUrl: `/uploads/${finalName}`,
+      message: `${type} evaluation PDF uploaded successfully`,
+      pdfUrl,
     });
   } catch (err) {
-    console.error("UPLOAD ERROR:", err);
+    console.error("PDF UPLOAD ERROR:", err);
     res.status(500).json({ message: "PDF upload failed" });
   }
 });
 
+/* --------------------------------
+   FETCH PDF URL (PUBLIC)
+-------------------------------- */
+router.get("/get-pdf/:type", async (req, res) => {
+  try {
+    const { type } = req.params;
 
-/* -----------------------------
-   FETCH PDF URL
------------------------------ */
-router.get("/get-pdf/:type", (req, res) => {
-  const { type } = req.params;
+    if (!["project", "service"].includes(type)) {
+      return res.status(400).json({ message: "Invalid PDF type" });
+    }
 
-  if (!["project", "service"].includes(type)) {
-    return res.status(400).json({ message: "Invalid PDF type" });
+    /*
+      Since Cloudinary overwrites the same public_id,
+      we can construct the URL directly.
+    */
+
+    const pdfUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload/${type}-evaluation.pdf`;
+
+    res.json({ pdfUrl });
+  } catch (err) {
+    console.error("FETCH PDF ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch PDF" });
   }
-
-  const fileName = `${type}-evaluation-sheet.pdf`;
-  const filePath = path.join("uploads", fileName);
-
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ message: "PDF not found" });
-  }
-
-  res.json({
-    pdfUrl: `/uploads/${fileName}`,
-  });
 });
 
 module.exports = router;

@@ -1,17 +1,27 @@
 const multer = require("multer");
-const path = require("path");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("../config/cloudinary");
 
-// Where & how file should be stored
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    const type = req.body.type; // project OR service
-    const ext = path.extname(file.originalname);
 
-    // This will always REPLACE the old file
-    cb(null, `${type}-evaluation${ext}`);
+// Cloudinary config (uses ENV variables)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Cloudinary storage for PDFs
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: (req, file) => {
+    const type = req.body.type || req.params.type; // project | service
+
+    return {
+      folder: "pdfs",
+      resource_type: "raw", // 🔥 REQUIRED for PDFs
+      public_id: `${type}-evaluation`, // always replaces old PDF
+      format: "pdf",
+    };
   },
 });
 
@@ -24,6 +34,10 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const uploadPdf = multer({ storage, fileFilter });
+const uploadPdf = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+});
 
 module.exports = uploadPdf;

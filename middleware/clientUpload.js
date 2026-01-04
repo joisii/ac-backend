@@ -1,38 +1,30 @@
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("../config/cloudinary");
 
-// Define folder path
-const uploadFolder = path.join(__dirname, "..", "uploads", "clients");
 
-// Create folder if it doesn't exist
-if (!fs.existsSync(uploadFolder)) {
-  fs.mkdirSync(uploadFolder, { recursive: true });
-  console.log("✅ Created folder for client uploads:", uploadFolder);
-}
+// Cloudinary config (ENV vars only)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-// Multer storage config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadFolder); // use the ensured folder
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + path.extname(file.originalname);
-    cb(null, uniqueName);
+// Cloudinary storage for client logos
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "clients",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    public_id: (req, file) =>
+      `client_${Date.now()}`, // unique name
   },
 });
 
-// File filter
-const fileFilter = (req, file, cb) => {
-  if (!file.mimetype.startsWith("image/")) {
-    return cb(new Error("Only image files allowed"));
-  }
-  cb(null, true);
-};
-
-// Export multer instance
-module.exports = multer({
+// Multer middleware
+const uploadClientLogo = multer({
   storage,
-  fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 });
+
+module.exports = uploadClientLogo;

@@ -7,8 +7,16 @@ const clientSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+
+    // Public Cloudinary URL (used directly in frontend <img src="..." />)
     logo: {
-      type: String, // image path
+      type: String,
+      required: true,
+    },
+
+    // Cloudinary public_id (used to delete / replace image)
+    logoPublicId: {
+      type: String,
       required: true,
     },
   },

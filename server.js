@@ -12,14 +12,6 @@ const Project=require('./models/Project');
 const AboutStats = require('./models/AboutStats');
 const CustomerList = require('./models/CustomerList');
 const adminPdfRoutes = require("./routes/adminPdfRoutes");
-
-// Ensure uploads/clients folder exists
-const clientUploadPath = path.join(__dirname, "uploads/clients");
-if (!fs.existsSync(clientUploadPath)) {
-  fs.mkdirSync(clientUploadPath, { recursive: true }); // ✅ creates uploads and clients if missing
-  console.log("✅ Created folder:", clientUploadPath);
-}
-
 const adminClientRoutes=require("./routes/adminClientRoutes");
 
 // Initialize app
@@ -325,9 +317,9 @@ app.delete("/customers/:id", async (req, res) => {
  
 //Project evaluaton sheet and Service evaluation sheet
 // Serve uploaded PDFs
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-app.use("/admin", adminPdfRoutes);
+
+app.use("/admin", require("./routes/adminPdfRoutes"));
 
 //project section clients
 app.use("/api", adminClientRoutes);
