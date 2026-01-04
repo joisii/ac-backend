@@ -1,6 +1,6 @@
 const express = require("express");
-const uploadPdf = require("../middleware/pdfUpload"); // 👈 Cloudinary middleware
-const cloudinary = require("../config/cloudinary");
+const uploadPdf = require("../middleware/pdfUpload"); // Cloudinary multer
+const EvaluationPdf = require("../models/EvaluationPdf");
 
 const router = express.Router();
 
@@ -15,17 +15,22 @@ router.post("/upload-pdf", uploadPdf.single("pdf"), async (req, res) => {
       return res.status(400).json({ message: "Invalid PDF type" });
     }
 
-    if (!req.file) {
+    if (!req.file || !req.file.path) {
       return res.status(400).json({ message: "No PDF uploaded" });
     }
 
-    // Cloudinary URL
-    const pdfUrl = req.file.path;
+    const pdfUrl = req.file.path; // ✅ REAL Cloudinary URL (versioned)
+
+    const record = await EvaluationPdf.findOneAndUpdate(
+      { type },
+      { url: pdfUrl, updatedAt: new Date() },
+      { upsert: true, new: true }
+    );
 
     res.json({
       success: true,
       message: `${type} evaluation PDF uploaded successfully`,
-      pdfUrl,
+      pdfUrl: record.url,
     });
   } catch (err) {
     console.error("PDF UPLOAD ERROR:", err);
@@ -44,14 +49,13 @@ router.get("/get-pdf/:type", async (req, res) => {
       return res.status(400).json({ message: "Invalid PDF type" });
     }
 
-    /*
-      Since Cloudinary overwrites the same public_id,
-      we can construct the URL directly.
-    */
+    const record = await EvaluationPdf.findOne({ type });
 
-    const pdfUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload/pdfs/${type}-evaluation.pdf`;
+    if (!record) {
+      return res.status(404).json({ message: "PDF not found" });
+    }
 
-    res.json({ pdfUrl });
+    res.json({ pdfUrl: record.url });
   } catch (err) {
     console.error("FETCH PDF ERROR:", err);
     res.status(500).json({ message: "Failed to fetch PDF" });

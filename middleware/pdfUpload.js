@@ -2,42 +2,48 @@ const multer = require("multer");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("../config/cloudinary");
 
-
-// Cloudinary config (uses ENV variables)
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Cloudinary storage for PDFs
+/* --------------------------------
+   Cloudinary Storage for PDFs
+-------------------------------- */
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: (req, file) => {
-    const type = req.body.type || req.params.type; // project | service
+  params: async (req, file) => {
+    const type = req.body.type; // "project" | "service"
+
+    if (!["project", "service"].includes(type)) {
+      throw new Error("Invalid PDF type");
+    }
 
     return {
       folder: "pdfs",
-      resource_type: "raw", // 🔥 REQUIRED for PDFs
-      public_id: `${type}-evaluation`, // always replaces old PDF
+      resource_type: "raw",      // ✅ REQUIRED for PDFs
+      public_id: `${type}-evaluation`,
       format: "pdf",
+      overwrite: true,           // ✅ Replace old PDF
     };
   },
 });
 
-// Allow ONLY PDF
+/* --------------------------------
+   Allow ONLY PDFs
+-------------------------------- */
 const fileFilter = (req, file, cb) => {
   if (file.mimetype === "application/pdf") {
     cb(null, true);
   } else {
-    cb(new Error("Only PDF files allowed"), false);
+    cb(new Error("Only PDF files are allowed"), false);
   }
 };
 
+/* --------------------------------
+   Multer Instance
+-------------------------------- */
 const uploadPdf = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max
+  },
 });
 
 module.exports = uploadPdf;
