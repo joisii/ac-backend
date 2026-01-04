@@ -2,8 +2,8 @@ require('dotenv').config(); // Load environment variables
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-import path from "path";
-import { fileURLToPath } from "url";
+const path = require("path");
+
 
 // Import models
 const Sale = require('./models/Sale');
@@ -13,8 +13,6 @@ const AboutStats = require('./models/AboutStats');
 const CustomerList = require('./models/CustomerList');
 const adminPdfRoutes = require("./routes/adminPdfRoutes");
 const adminClientRoutes=require("./routes/adminClientRoutes");
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Initialize app
 const app = express();
@@ -324,7 +322,8 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/admin", adminPdfRoutes);
 
 //project section clients
-app.use("/api", require("./routes/adminClientRoutes"));
+app.use("/api", adminClientRoutes);
+
 
 
 
