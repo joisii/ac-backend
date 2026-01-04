@@ -321,7 +321,7 @@ app.delete("/customers/:id", async (req, res) => {
 
 app.use("/admin", require("./routes/adminPdfRoutes"));
 
-//project section clients
+//clients
 app.use("/api", adminClientRoutes);
 
 
