@@ -49,7 +49,7 @@ router.get("/get-pdf/:type", async (req, res) => {
       we can construct the URL directly.
     */
 
-    const pdfUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload/${type}-evaluation.pdf`;
+    const pdfUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload/pdfs/${type}-evaluation.pdf`;
 
     res.json({ pdfUrl });
   } catch (err) {
