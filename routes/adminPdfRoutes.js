@@ -1,6 +1,8 @@
 const express = require("express");
-const uploadPdf = require("../middleware/pdfUpload"); // Cloudinary multer
+const uploadPdf = require("../middleware/pdfUpload");
 const EvaluationPdf = require("../models/EvaluationPdf");
+const cloudinary = require("../config/cloudinary");
+const axios = require("axios");
 
 const router = express.Router();
 
@@ -9,7 +11,7 @@ const router = express.Router();
 -------------------------------- */
 router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
   try {
-     const { type } = req.params;
+    const { type } = req.params;
 
     if (!["project", "service"].includes(type)) {
       return res.status(400).json({ message: "Invalid PDF type" });
@@ -19,7 +21,7 @@ router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
       return res.status(400).json({ message: "No PDF uploaded" });
     }
 
-    const pdfUrl = req.file.path; // ✅ REAL Cloudinary URL (versioned)
+    const pdfUrl = req.file.path; // 🔐 private Cloudinary RAW URL
 
     const record = await EvaluationPdf.findOneAndUpdate(
       { type },
@@ -30,7 +32,6 @@ router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
     res.json({
       success: true,
       message: `${type} evaluation PDF uploaded successfully`,
-      pdfUrl: record.url,
     });
   } catch (err) {
     console.error("PDF UPLOAD ERROR:", err);
@@ -39,9 +40,9 @@ router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
 });
 
 /* --------------------------------
-   FETCH PDF URL (PUBLIC)
+   STREAM PDF (PUBLIC SAFE ACCESS)
 -------------------------------- */
-router.get("/get-pdf/:type", async (req, res) => {
+router.get("/pdf/:type", async (req, res) => {
   try {
     const { type } = req.params;
 
@@ -51,14 +52,33 @@ router.get("/get-pdf/:type", async (req, res) => {
 
     const record = await EvaluationPdf.findOne({ type });
 
-    if (!record) {
+    if (!record || !record.url) {
       return res.status(404).json({ message: "PDF not found" });
     }
 
-    res.json({ pdfUrl: record.url });
+    // 🔐 Generate signed Cloudinary URL
+    const signedUrl = cloudinary.utils.private_download_url(
+      record.url
+        .split("/upload/")[1]
+        .replace(".pdf", ""),
+      "pdf",
+      {
+        resource_type: "raw",
+      }
+    );
+
+    // 🧠 Stream from Cloudinary → browser
+    const response = await axios.get(signedUrl, {
+      responseType: "stream",
+    });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Cache-Control", "no-store");
+
+    response.data.pipe(res);
   } catch (err) {
-    console.error("FETCH PDF ERROR:", err);
-    res.status(500).json({ message: "Failed to fetch PDF" });
+    console.error("PDF STREAM ERROR:", err.message);
+    res.status(500).json({ message: "Failed to load PDF" });
   }
 });
 
