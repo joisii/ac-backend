@@ -13,14 +13,14 @@ router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
   try {
     const { type } = req.params;
 
-    if (!req.file || !req.file.filename) {
+    if (!req.file) {
       return res.status(400).json({ message: "No PDF uploaded" });
     }
 
     await EvaluationPdf.findOneAndUpdate(
       { type },
       {
-        publicId: req.file.filename, // ex: project-evaluation
+        publicId: req.file.public_id, // ✅ FIX
         updatedAt: new Date(),
       },
       { upsert: true, new: true }
@@ -36,12 +36,6 @@ router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
   }
 });
 
-/* --------------------------------
-   STREAM PDF (SECURE PUBLIC ACCESS)
--------------------------------- */
-/* --------------------------------
-   STREAM PDF (SECURE + WORKING)
--------------------------------- */
 /* --------------------------------
    STREAM PDF (STABLE & WORKING)
 -------------------------------- */
@@ -59,8 +53,7 @@ router.get("/pdf/:type", async (req, res) => {
       return res.status(404).json({ message: "PDF not found" });
     }
 
-    // ✅ Direct RAW delivery URL
-    const fileUrl = cloudinary.url(`pdfs/${record.publicId}`, {
+    const fileUrl = cloudinary.url(record.publicId, {
       resource_type: "raw",
       secure: true,
     });
@@ -75,10 +68,11 @@ router.get("/pdf/:type", async (req, res) => {
 
     response.data.pipe(res);
   } catch (err) {
-    console.error("PDF STREAM ERROR:", err);
+    console.error("PDF STREAM ERROR:", err.message);
     res.status(500).json({ message: "Failed to stream PDF" });
   }
 });
+
 
 
 
