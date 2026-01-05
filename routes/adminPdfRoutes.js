@@ -13,10 +13,6 @@ router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
   try {
     const { type } = req.params;
 
-    if (!["project", "service"].includes(type)) {
-      return res.status(400).json({ message: "Invalid PDF type" });
-    }
-
     if (!req.file || !req.file.filename) {
       return res.status(400).json({ message: "No PDF uploaded" });
     }
@@ -24,7 +20,7 @@ router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
     await EvaluationPdf.findOneAndUpdate(
       { type },
       {
-        publicId: req.file.filename, // ✅ ONLY publicId
+        publicId: req.file.filename, // ex: project-evaluation
         updatedAt: new Date(),
       },
       { upsert: true, new: true }
@@ -41,7 +37,7 @@ router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
 });
 
 /* --------------------------------
-   STREAM PDF (PUBLIC SAFE ACCESS)
+   STREAM PDF (SECURE PUBLIC ACCESS)
 -------------------------------- */
 router.get("/pdf/:type", async (req, res) => {
   try {
@@ -57,14 +53,13 @@ router.get("/pdf/:type", async (req, res) => {
       return res.status(404).json({ message: "PDF not found" });
     }
 
-    // 🔐 Generate signed Cloudinary URL using publicId
+    // 🔐 Signed URL (THIS is where security lives)
     const signedUrl = cloudinary.utils.private_download_url(
-      record.publicId,
+      `pdfs/${record.publicId}`,
       "pdf",
       { resource_type: "raw" }
     );
 
-    // 🌊 Stream PDF
     const response = await axios.get(signedUrl, {
       responseType: "stream",
     });
@@ -75,7 +70,7 @@ router.get("/pdf/:type", async (req, res) => {
 
     response.data.pipe(res);
   } catch (err) {
-    console.error("PDF STREAM ERROR:", err.message);
+    console.error("PDF STREAM ERROR:", err);
     res.status(500).json({ message: "Failed to stream PDF" });
   }
 });

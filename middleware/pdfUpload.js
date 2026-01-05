@@ -16,11 +16,11 @@ const storage = new CloudinaryStorage({
 
     return {
       folder: "pdfs",
-      resource_type: "raw",           // ✅ REQUIRED for PDFs
+      resource_type: "raw",            // ✅ PDFs must be raw
       format: "pdf",
-      public_id: `${type}-evaluation`, // 🔑 fixed name
-      overwrite: true,                // ♻️ replace old PDF
-      access_mode: "private",         // 🔐 secure access
+      public_id: `${type}-evaluation`, // 🔑 fixed name (overwrite works)
+      overwrite: true,                 // ♻️ replace existing
+      // ❌ access_mode REMOVED (THIS WAS THE BUG)
     };
   },
 });
@@ -43,7 +43,7 @@ const uploadPdf = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max
+    fileSize: 10 * 1024 * 1024, // 10MB
   },
 });
 
