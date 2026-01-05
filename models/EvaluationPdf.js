@@ -1,20 +1,10 @@
-const mongoose = require("mongoose");
-
-const EvaluationPdfSchema = new mongoose.Schema({
-  type: {
-    type: String,
-    enum: ["project", "service"],
-    unique: true,
-    required: true,
+const EvaluationPdfSchema = new mongoose.Schema(
+  {
+    type: { type: String, required: true, unique: true },
+    publicId: { type: String, required: true },
+    url: { type: String },
   },
-  publicId: {
-    type: String,
-    required: true,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+  { timestamps: true }
+);
 
 module.exports = mongoose.model("EvaluationPdf", EvaluationPdfSchema);

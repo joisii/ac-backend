@@ -9,33 +9,40 @@ const router = express.Router();
 /* --------------------------------
    UPLOAD / REPLACE PDF (ADMIN)
 -------------------------------- */
-router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
-  try {
-    const { type } = req.params;
+router.post(
+  "/upload-pdf/:type",
+  uploadPdf.single("pdf"),
+  async (req, res) => {
+    try {
+      const { type } = req.params;
 
-    if (!req.file) {
-      return res.status(400).json({ message: "No PDF uploaded" });
+      if (!req.file) {
+        return res.status(400).json({ message: "No PDF uploaded" });
+      }
+
+      const updated = await EvaluationPdf.findOneAndUpdate(
+        { type },
+        {
+          type,
+          publicId: req.file.public_id, // 🔥 THIS IS THE KEY
+          url: req.file.path,
+          updatedAt: new Date(),
+        },
+        { upsert: true, new: true }
+      );
+
+      res.json({
+        success: true,
+        message: `${type} PDF uploaded`,
+        data: updated,
+      });
+    } catch (err) {
+      console.error("UPLOAD ERROR:", err);
+      res.status(500).json({ message: "Upload failed" });
     }
-
-    await EvaluationPdf.findOneAndUpdate(
-      { type },
-      {
-        publicId: req.file.public_id, // ✅ CLEAN ID
-        url: req.file.path,           // optional but useful
-        updatedAt: new Date(),
-      },
-      { upsert: true, new: true }
-    );
-
-    res.json({
-      success: true,
-      message: `${type} evaluation PDF uploaded successfully`,
-    });
-  } catch (err) {
-    console.error("PDF UPLOAD ERROR:", err);
-    res.status(500).json({ message: "PDF upload failed" });
   }
-});
+);
+
 
 
 /* --------------------------------
