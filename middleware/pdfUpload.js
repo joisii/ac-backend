@@ -17,7 +17,7 @@ const storage = new CloudinaryStorage({
     return {
       folder: "pdfs",
       resource_type: "raw",
-      public_id: `${type}-evaluation`, // ✅ NO .pdf
+      public_id: `${type}-evaluation.pdf`, // ✅ ensure .pdf is in public ID
       overwrite: true,
     };
   },

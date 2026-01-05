@@ -2,7 +2,6 @@ const express = require("express");
 const uploadPdf = require("../middleware/pdfUpload");
 const EvaluationPdf = require("../models/EvaluationPdf");
 const cloudinary = require("../config/cloudinary");
-const axios = require("axios");
 
 const router = express.Router();
 
@@ -20,12 +19,13 @@ router.post(
         return res.status(400).json({ message: "No PDF uploaded" });
       }
 
+      // Save to MongoDB
       const updated = await EvaluationPdf.findOneAndUpdate(
         { type },
         {
           type,
-          publicId: req.file.public_id, // 🔥 THIS IS THE KEY
-          url: req.file.path,
+          publicId: req.file.public_id, // Cloudinary public ID
+          url: req.file.path,            // Cloudinary URL (includes .pdf)
           updatedAt: new Date(),
         },
         { upsert: true, new: true }
@@ -33,7 +33,7 @@ router.post(
 
       res.json({
         success: true,
-        message: `${type} PDF uploaded`,
+        message: `${type} PDF uploaded successfully`,
         data: updated,
       });
     } catch (err) {
@@ -43,38 +43,29 @@ router.post(
   }
 );
 
-
-
 /* --------------------------------
-   STREAM PDF (STABLE & WORKING)
+   STREAM PDF
 -------------------------------- */
 router.get("/pdf/:type", async (req, res) => {
   try {
-    const record = await EvaluationPdf.findOne({ type: req.params.type });
+    const { type } = req.params;
 
-    if (!record?.publicId) {
+    if (!["project", "service"].includes(type)) {
+      return res.status(400).json({ message: "Invalid PDF type" });
+    }
+
+    const record = await EvaluationPdf.findOne({ type });
+
+    if (!record || !record.url) {
       return res.status(404).json({ message: "PDF not found" });
     }
 
-    const fileUrl = cloudinary.url(record.publicId, {
-      resource_type: "raw",
-      secure: true,
-    });
-
-    const response = await axios.get(fileUrl, { responseType: "stream" });
-
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "inline");
-    res.setHeader("Cache-Control", "no-store");
-
-    response.data.pipe(res);
+    // ✅ Redirect directly to Cloudinary URL
+    return res.redirect(record.url);
   } catch (err) {
-    console.error("PDF STREAM ERROR:", err.message);
-    res.status(500).json({ message: "Failed to stream PDF" });
+    console.error("PDF FETCH ERROR:", err);
+    res.status(500).json({ message: "Failed to load PDF" });
   }
 });
-
-
-
 
 module.exports = router;
