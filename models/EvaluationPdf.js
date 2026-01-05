@@ -1,3 +1,5 @@
+const mongoose = require("mongoose");
+
 const EvaluationPdfSchema = new mongoose.Schema(
   {
     type: { type: String, required: true, unique: true },
