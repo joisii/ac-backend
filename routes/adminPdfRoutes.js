@@ -39,6 +39,9 @@ router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
 /* --------------------------------
    STREAM PDF (SECURE PUBLIC ACCESS)
 -------------------------------- */
+/* --------------------------------
+   STREAM PDF (SECURE + WORKING)
+-------------------------------- */
 router.get("/pdf/:type", async (req, res) => {
   try {
     const { type } = req.params;
@@ -53,14 +56,20 @@ router.get("/pdf/:type", async (req, res) => {
       return res.status(404).json({ message: "PDF not found" });
     }
 
-    // 🔐 Signed URL (THIS is where security lives)
-    const signedUrl = cloudinary.utils.private_download_url(
-      `pdfs/${record.publicId}`,
-      "pdf",
-      { resource_type: "raw" }
-    );
+    // ✅ SIGNED URL FOR RAW FILE
+    const signedUrl = cloudinary.utils.sign_request({
+      public_id: `pdfs/${record.publicId}`,
+      resource_type: "raw",
+      expires_at: Math.floor(Date.now() / 1000) + 60, // 1 min
+    });
 
-    const response = await axios.get(signedUrl, {
+    const fileUrl = cloudinary.url(`pdfs/${record.publicId}`, {
+      resource_type: "raw",
+      sign_url: true,
+      expires_at: Math.floor(Date.now() / 1000) + 60,
+    });
+
+    const response = await axios.get(fileUrl, {
       responseType: "stream",
     });
 
@@ -74,5 +83,6 @@ router.get("/pdf/:type", async (req, res) => {
     res.status(500).json({ message: "Failed to stream PDF" });
   }
 });
+
 
 module.exports = router;
