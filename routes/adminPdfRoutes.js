@@ -7,9 +7,9 @@ const router = express.Router();
 /* --------------------------------
    UPLOAD / REPLACE PDF (ADMIN)
 -------------------------------- */
-router.post("/upload-pdf", uploadPdf.single("pdf"), async (req, res) => {
+router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
   try {
-    const { type } = req.body;
+     const { type } = req.params;
 
     if (!["project", "service"].includes(type)) {
       return res.status(400).json({ message: "Invalid PDF type" });
