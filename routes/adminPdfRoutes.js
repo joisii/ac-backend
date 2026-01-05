@@ -42,6 +42,9 @@ router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
 /* --------------------------------
    STREAM PDF (SECURE + WORKING)
 -------------------------------- */
+/* --------------------------------
+   STREAM PDF (STABLE & WORKING)
+-------------------------------- */
 router.get("/pdf/:type", async (req, res) => {
   try {
     const { type } = req.params;
@@ -56,17 +59,10 @@ router.get("/pdf/:type", async (req, res) => {
       return res.status(404).json({ message: "PDF not found" });
     }
 
-    // ✅ SIGNED URL FOR RAW FILE
-    const signedUrl = cloudinary.utils.sign_request({
-      public_id: `pdfs/${record.publicId}`,
-      resource_type: "raw",
-      expires_at: Math.floor(Date.now() / 1000) + 60, // 1 min
-    });
-
+    // ✅ Direct RAW delivery URL
     const fileUrl = cloudinary.url(`pdfs/${record.publicId}`, {
       resource_type: "raw",
-      sign_url: true,
-      expires_at: Math.floor(Date.now() / 1000) + 60,
+      secure: true,
     });
 
     const response = await axios.get(fileUrl, {
@@ -74,8 +70,8 @@ router.get("/pdf/:type", async (req, res) => {
     });
 
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Cache-Control", "no-store");
     res.setHeader("Content-Disposition", "inline");
+    res.setHeader("Cache-Control", "no-store");
 
     response.data.pipe(res);
   } catch (err) {
@@ -83,6 +79,7 @@ router.get("/pdf/:type", async (req, res) => {
     res.status(500).json({ message: "Failed to stream PDF" });
   }
 });
+
 
 
 module.exports = router;
