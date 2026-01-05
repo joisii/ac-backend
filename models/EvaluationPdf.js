@@ -7,7 +7,7 @@ const EvaluationPdfSchema = new mongoose.Schema({
     unique: true,
     required: true,
   },
-  url: {
+  publicId: {
     type: String,
     required: true,
   },

@@ -15,24 +15,20 @@ const storage = new CloudinaryStorage({
       folder: "pdfs",
       resource_type: "raw",
       format: "pdf",
+      public_id: `${type}-evaluation`, // 🔑 IMPORTANT
       overwrite: true,
-      public_id: `${type}-evaluation`,
+      access_mode: "private", // 🔐 keep secure
     };
   },
 });
 
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype === "application/pdf") {
-    cb(null, true);
-  } else {
-    cb(new Error("Only PDF files are allowed"), false);
-  }
+  if (file.mimetype === "application/pdf") cb(null, true);
+  else cb(new Error("Only PDF files allowed"), false);
 };
 
-const uploadPdf = multer({
+module.exports = multer({
   storage,
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 },
 });
-
-module.exports = uploadPdf;
