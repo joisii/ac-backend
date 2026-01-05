@@ -45,6 +45,7 @@ app.options('*', cors());
 
 // Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // ✅ ADD THIS
 
 // ------------------------------------
 // 🌐 MongoDB Atlas Connection
@@ -317,15 +318,18 @@ app.delete("/customers/:id", async (req, res) => {
  
 //Project evaluaton sheet and Service evaluation sheet
 // Serve uploaded PDFs
-
-
 app.use("/admin", require("./routes/adminPdfRoutes"));
 
 //clients
 app.use("/api", adminClientRoutes);
 
 
-
+app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR:", err.message);
+  res.status(500).json({
+    message: err.message || "Internal Server Error",
+  });
+});
 
 
 // 🚀 Start Server

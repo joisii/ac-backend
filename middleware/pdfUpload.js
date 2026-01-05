@@ -4,23 +4,28 @@ const cloudinary = require("../config/cloudinary");
 
 /* --------------------------------
    Cloudinary Storage for PDFs
+   (SAFE + PRODUCTION READY)
 -------------------------------- */
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: async (req, file) => {
-    const type = req.body.type; // "project" | "service"
+  params: {
+    folder: "pdfs",
+    resource_type: "raw",      // ✅ REQUIRED for PDFs
+    format: "pdf",
+    overwrite: true,
 
-    if (!["project", "service"].includes(type)) {
-      throw new Error("Invalid PDF type");
-    }
+    // ⚠️ IMPORTANT:
+    // public_id must be a FUNCTION
+    // DO NOT read req.body synchronously earlier
+    public_id: (req) => {
+      const type = req.body?.type;
 
-    return {
-      folder: "pdfs",
-      resource_type: "raw",      // ✅ REQUIRED for PDFs
-      public_id: `${type}-evaluation`,
-      format: "pdf",
-      overwrite: true,           // ✅ Replace old PDF
-    };
+      if (!["project", "service"].includes(type)) {
+        throw new Error("Invalid PDF type");
+      }
+
+      return `${type}-evaluation`;
+    },
   },
 });
 
