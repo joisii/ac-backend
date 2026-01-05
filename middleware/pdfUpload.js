@@ -14,12 +14,13 @@ const storage = new CloudinaryStorage({
       throw new Error("Invalid PDF type");
     }
 
-    return {
-      folder: "pdfs",
-      resource_type: "raw",
-      public_id: `${type}-evaluation.pdf`, // ✅ ensure .pdf is in public ID
-      overwrite: true,
-    };
+   return {
+  folder: "pdfs",
+  resource_type: "raw",
+  type: "upload",          // 🔥 FORCE PUBLIC DELIVERY
+  public_id: `${type}-evaluation`,
+  overwrite: true,
+};
   },
 });
 
