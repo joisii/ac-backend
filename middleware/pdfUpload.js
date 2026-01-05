@@ -2,6 +2,9 @@ const multer = require("multer");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("../config/cloudinary");
 
+/* --------------------------------
+   Cloudinary Storage for PDFs
+-------------------------------- */
 const storage = new CloudinaryStorage({
   cloudinary,
   params: (req) => {
@@ -13,22 +16,35 @@ const storage = new CloudinaryStorage({
 
     return {
       folder: "pdfs",
-      resource_type: "raw",
+      resource_type: "raw",           // ✅ REQUIRED for PDFs
       format: "pdf",
-      public_id: `${type}-evaluation`, // 🔑 IMPORTANT
-      overwrite: true,
-      access_mode: "private", // 🔐 keep secure
+      public_id: `${type}-evaluation`, // 🔑 fixed name
+      overwrite: true,                // ♻️ replace old PDF
+      access_mode: "private",         // 🔐 secure access
     };
   },
 });
 
+/* --------------------------------
+   Allow ONLY PDFs
+-------------------------------- */
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype === "application/pdf") cb(null, true);
-  else cb(new Error("Only PDF files allowed"), false);
+  if (file.mimetype === "application/pdf") {
+    cb(null, true);
+  } else {
+    cb(new Error("Only PDF files are allowed"), false);
+  }
 };
 
-module.exports = multer({
+/* --------------------------------
+   Multer Instance
+-------------------------------- */
+const uploadPdf = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max
+  },
 });
+
+module.exports = uploadPdf;
