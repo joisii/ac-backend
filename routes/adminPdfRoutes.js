@@ -20,7 +20,8 @@ router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
     await EvaluationPdf.findOneAndUpdate(
       { type },
       {
-        publicId: req.file.public_id, // ✅ FIX
+        publicId: req.file.public_id, // ✅ CLEAN ID
+        url: req.file.path,           // optional but useful
         updatedAt: new Date(),
       },
       { upsert: true, new: true }
@@ -36,20 +37,15 @@ router.post("/upload-pdf/:type", uploadPdf.single("pdf"), async (req, res) => {
   }
 });
 
+
 /* --------------------------------
    STREAM PDF (STABLE & WORKING)
 -------------------------------- */
 router.get("/pdf/:type", async (req, res) => {
   try {
-    const { type } = req.params;
+    const record = await EvaluationPdf.findOne({ type: req.params.type });
 
-    if (!["project", "service"].includes(type)) {
-      return res.status(400).json({ message: "Invalid PDF type" });
-    }
-
-    const record = await EvaluationPdf.findOne({ type });
-
-    if (!record || !record.publicId) {
+    if (!record?.publicId) {
       return res.status(404).json({ message: "PDF not found" });
     }
 
@@ -58,9 +54,7 @@ router.get("/pdf/:type", async (req, res) => {
       secure: true,
     });
 
-    const response = await axios.get(fileUrl, {
-      responseType: "stream",
-    });
+    const response = await axios.get(fileUrl, { responseType: "stream" });
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline");

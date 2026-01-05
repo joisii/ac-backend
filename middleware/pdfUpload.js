@@ -16,14 +16,13 @@ const storage = new CloudinaryStorage({
 
     return {
       folder: "pdfs",
-      resource_type: "raw",            // ✅ PDFs must be raw
-      format: "pdf",
-      public_id: `${type}-evaluation`, // 🔑 fixed name (overwrite works)
-      overwrite: true,                 // ♻️ replace existing
-      // ❌ access_mode REMOVED (THIS WAS THE BUG)
+      resource_type: "raw",
+      public_id: `${type}-evaluation`, // ✅ NO .pdf
+      overwrite: true,
     };
   },
 });
+
 
 /* --------------------------------
    Allow ONLY PDFs
