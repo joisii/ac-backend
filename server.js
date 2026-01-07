@@ -66,6 +66,7 @@ app.get('/', (req, res) => {
   res.send('🚀 Backend is up and running!');
 });
 
+//ADMIN
 app.use("/admin", adminAuthRoutes);
 
 // ------------------------------------

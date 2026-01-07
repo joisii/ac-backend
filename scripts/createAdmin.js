@@ -4,12 +4,18 @@ const Admin = require("../models/Admin");
 
 mongoose.connect(process.env.MONGO_URI)
   .then(async () => {
-    await Admin.create({
-      username: "admin",
-      password: "gvj@123"
-    });
+    const existing = await Admin.findOne({ username: "admin" });
 
-    console.log("✅ Admin created");
+    if (!existing) {
+      await Admin.create({
+        username: "admin",
+        password: "gvj@123",
+      });
+      console.log("✅ Admin created");
+    } else {
+      console.log("⚠️ Admin already exists");
+    }
+
     process.exit();
   })
   .catch(err => {
