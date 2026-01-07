@@ -67,7 +67,7 @@ app.get('/', (req, res) => {
 });
 
 //ADMIN
-app.use("/admin", adminAuthRoutes);
+app.use("/admin/auth", adminAuthRoutes);
 
 // ------------------------------------
 // 🧾 SALES ROUTES
