@@ -13,6 +13,8 @@ const AboutStats = require('./models/AboutStats');
 const CustomerList = require('./models/CustomerList');
 const adminPdfRoutes = require("./routes/adminPdfRoutes");
 const adminClientRoutes=require("./routes/adminClientRoutes");
+const adminAuthRoutes = require("./routes/adminAuthRoutes");
+
 
 // Initialize app
 const app = express();
@@ -64,18 +66,7 @@ app.get('/', (req, res) => {
   res.send('🚀 Backend is up and running!');
 });
 
-// ------------------------------------
-// 🔐 Admin Login Route
-// ------------------------------------
-app.post('/admin/login', (req, res) => {
-  const { username, password } = req.body;
-
-  if (username === process.env.ADMIN_USER && password === process.env.ADMIN_PASS) {
-    res.json({ success: true });
-  } else {
-    res.status(401).json({ success: false, message: 'Invalid credentials' });
-  }
-});
+app.use("/admin", adminAuthRoutes);
 
 // ------------------------------------
 // 🧾 SALES ROUTES
