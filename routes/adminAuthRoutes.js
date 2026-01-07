@@ -36,26 +36,36 @@ router.put("/change-password", async (req, res) => {
   const { username, oldPassword, newPassword } = req.body;
 
   try {
+    // 1️⃣ Find admin by username
     const admin = await Admin.findOne({ username });
 
     if (!admin) {
-      return res.status(404).json({ message: "Admin not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Admin not found" });
     }
 
+    // 2️⃣ Verify old password
     if (admin.password !== oldPassword) {
-      return res.status(401).json({ message: "Old password is incorrect" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Old password is incorrect" });
     }
 
-    // 🔁 Replace old password with new one
+    // 3️⃣ Update password
     admin.password = newPassword;
     await admin.save();
 
+    // 4️⃣ Success
     res.json({
       success: true,
       message: "Password updated successfully",
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("CHANGE PASSWORD ERROR:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error" });
   }
 });
 
