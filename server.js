@@ -50,7 +50,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // ✅ ADD THIS
 
 //ADMIN
-app.use("/admin/auth", adminAuthRoutes);
+app.use("/adminlog", adminAuthRoutes);
 
 // ------------------------------------
 // 🌐 MongoDB Atlas Connection
