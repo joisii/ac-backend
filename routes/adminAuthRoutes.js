@@ -2,27 +2,34 @@ const express = require("express");
 const router = express.Router();
 const Admin = require("../models/Admin");
 
-// ------------------- ADMIN LOGIN -------------------
 router.post("/login", async (req, res) => {
-  console.log("🔥 LOGIN HIT");
-  console.log("BODY:", req.body);})
+  const { username, password } = req.body;
 
-//   const { username, password } = req.body;
+  try {
+    let admin = await Admin.findOne({ username });
 
-//   try {
-//     const admin = await Admin.findOne({ username });
+    // 🔥 If admin doesn't exist → create it
+    if (!admin) {
+      admin = await Admin.create({ username, password });
+      console.log("✅ Admin auto-created");
+      return res.json({ success: true, firstLogin: true });
+    }
 
-//     if (!admin || admin.password !== password) {
-//       return res
-//         .status(401)
-//         .json({ success: false, message: "Invalid credentials" });
-//     }
+    // Normal login
+    if (admin.password !== password) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
+    }
 
-//     res.json({ success: true });
-//   } catch (err) {
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+
 
 // ------------------- CHANGE PASSWORD -------------------
 router.put("/change-password", async (req, res) => {
