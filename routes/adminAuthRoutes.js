@@ -4,6 +4,9 @@ const Admin = require("../models/Admin");
 
 // ------------------- ADMIN LOGIN -------------------
 router.post("/login", async (req, res) => {
+  console.log("🔥 LOGIN HIT");
+  console.log("BODY:", req.body);
+
   const { username, password } = req.body;
 
   try {

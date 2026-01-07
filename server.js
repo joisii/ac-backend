@@ -49,6 +49,9 @@ app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // ✅ ADD THIS
 
+//ADMIN
+app.use("/admin/auth", adminAuthRoutes);
+
 // ------------------------------------
 // 🌐 MongoDB Atlas Connection
 // ------------------------------------
@@ -66,8 +69,7 @@ app.get('/', (req, res) => {
   res.send('🚀 Backend is up and running!');
 });
 
-//ADMIN
-app.use("/admin/auth", adminAuthRoutes);
+
 
 // ------------------------------------
 // 🧾 SALES ROUTES
