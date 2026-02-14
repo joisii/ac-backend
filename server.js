@@ -2,10 +2,19 @@ require('dotenv').config(); // Load environment variables
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require("path");
+const fs = require("fs");
 
 // Import models
 const Sale = require('./models/Sale');
 const ServiceRequest = require('./models/ServiceRequest');
+const Project=require('./models/Project');
+const AboutStats = require('./models/AboutStats');
+const CustomerList = require('./models/CustomerList');
+const adminPdfRoutes = require("./routes/adminPdfRoutes");
+const adminClientRoutes=require("./routes/adminClientRoutes");
+const adminAuthRoutes = require("./routes/adminAuthRoutes");
+
 
 // Initialize app
 const app = express();
@@ -38,6 +47,10 @@ app.use(cors({
 
 // Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // ✅ ADD THIS
+
+//ADMIN
+app.use("/adminlog", adminAuthRoutes);
 
 // ------------------------------------
 // 🌐 MongoDB Atlas Connection
@@ -56,18 +69,7 @@ app.get('/', (req, res) => {
   res.send('🚀 Backend is up and running!');
 });
 
-// ------------------------------------
-// 🔐 Admin Login Route
-// ------------------------------------
-app.post('/admin/login', (req, res) => {
-  const { username, password } = req.body;
 
-  if (username === process.env.ADMIN_USER && password === process.env.ADMIN_PASS) {
-    res.json({ success: true });
-  } else {
-    res.status(401).json({ success: false, message: 'Invalid credentials' });
-  }
-});
 
 // ------------------------------------
 // 🧾 SALES ROUTES
@@ -131,7 +133,199 @@ app.delete('/requests/:id', async (req, res) => {
   }
 });
 
+// ------------------- Projects API -------------------
+
+app.get('/projects', async (req, res) => {
+  try {
+    const { category, admin } = req.query;
+
+    // Admin sees all projects, users see only active ones
+    const filter = admin === 'true' ? {} : { isActive: true };
+
+    if (category) {
+      filter.category = category;
+    }
+
+    const projects = await Project.find(filter)
+  .select("name location application acType category")
+  .lean();
+    res.json(projects);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching projects', error: err });
+  }
+});
+
+app.post('/projects', async (req, res) => {
+  try {
+    const newProject = new Project(req.body);
+    await newProject.save();
+    res.json(newProject);
+  } catch (err) {
+    res.status(500).json({ message: 'Error saving project', error: err });
+  }
+});
+
+app.put('/projects/:id', async (req, res) => {
+  try {
+    const updatedProject = await Project.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    if (!updatedProject) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    res.json(updatedProject);
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating project', error: err });
+  }
+});
+
+// ------------------- HARD DELETE -------------------
+app.delete('/projects/:id', async (req, res) => {
+  try {
+    const deletedProject = await Project.findByIdAndDelete(req.params.id);
+
+    if (!deletedProject) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    res.json({ message: 'Project permanently deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting project', error: err });
+  }
+});
+
 // ------------------------------------
+// 📊 ABOUT STATS API (ADD THIS HERE)
+// ------------------------------------
+
+// About Stats Routes
+app.get('/about-stats', async (req, res) => {
+  try {
+    let stats = await AboutStats.findOne();
+
+    if (!stats) {
+      stats = await AboutStats.create({
+        coolingInstalledTR: 0,
+        clientsServed: 0,
+      });
+    }
+
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({
+      message: 'Error fetching about stats',
+      error: err,
+    });
+  }
+});
+
+app.put('/about-stats', async (req, res) => {
+  try {
+    const { coolingInstalledTR, clientsServed } = req.body;
+
+    if (
+      typeof coolingInstalledTR !== 'number' ||
+      typeof clientsServed !== 'number'
+    ) {
+      return res.status(400).json({ message: 'Invalid data type' });
+    }
+
+    const stats = await AboutStats.findOneAndUpdate(
+      {},
+      { coolingInstalledTR, clientsServed },
+      { new: true, upsert: true }
+    );
+
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({
+      message: 'Error updating about stats',
+      error: err,
+    });
+  }
+});
+
+// ------------------- GET ALL CUSTOMERS -------------------
+app.get("/customers", async (req, res) => {
+  try {
+    const warranty = await CustomerList.find({ type: "warranty" }).sort({ sno: 1 }).lean();
+    const amc = await CustomerList.find({ type: "amc" }).sort({ sno: 1 }).lean();
+    res.json({ warranty, amc });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching customers", error: err });
+  }
+});
+
+// ------------------- ADD CUSTOMER -------------------
+app.post("/customers", async (req, res) => {
+  try {
+    const { type, client } = req.body;
+    if (!type || !client) return res.status(400).json({ message: "Type and client are required" });
+
+    const last = await CustomerList.findOne({ type }).sort({ sno: -1 });
+    const newSno = last ? last.sno + 1 : 1;
+
+    const newCustomer = new CustomerList({ type, client, sno: newSno });
+    await newCustomer.save();
+
+    res.json(newCustomer);
+  } catch (err) {
+    res.status(500).json({ message: "Error adding customer", error: err });
+  }
+});
+
+// ------------------- EDIT CUSTOMER -------------------
+app.put("/customers/:id", async (req, res) => {
+  try {
+    const { client } = req.body;
+    if (!client) return res.status(400).json({ message: "Client name required" });
+
+    const updatedCustomer = await CustomerList.findByIdAndUpdate(
+      req.params.id,
+      { client },
+      { new: true }
+    );
+
+    if (!updatedCustomer) return res.status(404).json({ message: "Customer not found" });
+
+    res.json(updatedCustomer);
+  } catch (err) {
+    res.status(500).json({ message: "Error updating customer", error: err });
+  }
+});
+
+// ------------------- DELETE CUSTOMER -------------------
+app.delete("/customers/:id", async (req, res) => {
+  try {
+    const deletedCustomer = await CustomerList.findByIdAndDelete(req.params.id);
+    if (!deletedCustomer) return res.status(404).json({ message: "Customer not found" });
+
+    res.json({ message: "Customer deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting customer", error: err });
+  }
+});
+ 
+//Project evaluaton sheet and Service evaluation sheet
+// Serve uploaded PDFs
+app.use("/admin", require("./routes/adminPdfRoutes"));
+
+//clients
+app.use("/api", adminClientRoutes);
+
+
+app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR:", err.message);
+  res.status(500).json({
+    message: err.message || "Internal Server Error",
+  });
+});
+
+
 // 🚀 Start Server
 // ------------------------------------
 const PORT = process.env.PORT || 5000;
