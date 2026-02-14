@@ -16,7 +16,8 @@ const app = express();
 const allowedOrigins = [
   'https://gvjwebsite.netlify.app',  // Old frontend
   'https://www.gvjaircon.com',       // ✅ NEW LIVE DOMAIN
-  'http://localhost:3000'            // Local development
+  'http://localhost:3000'     
+       // Local development
 ];
 
 app.use(cors({
@@ -33,7 +34,7 @@ app.use(cors({
 }));
 
 // ✅ Handle Preflight Requests
-app.options('*', cors());
+// app.options('*', cors());////here
 
 // Middleware
 app.use(express.json());
